@@ -3,19 +3,12 @@
 #include <sstream>
 #include <vector>
 #include "./headers/structs.h"
-
+#include "./headers/cli.h"
 using namespace std;
 int main()
 {
-    string command;
-    cout<<sizeof(Columna)<<endl;
-    while(true)
-    {
-        cout<< "DBCLI>>";
-        getline(cin,command);
-        
-
-
-    }
+    Cli cli = Cli();
+    cli.loop();
+    
     return 0;
 }
