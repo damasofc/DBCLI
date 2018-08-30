@@ -1,10 +1,21 @@
+
+#ifndef STRUCTS_H
+#define STRUCTS_H
+
+
+
+
 #include <iostream>
+#include <string.h>
+#include "data_file.h"
 
 
-//tamano de 44 bytes
+//tamano de 48 bytes
 struct DB
 {
     char nombre[30];
+    //este tamano del bitmap es en bytes
+    int size;
     int bitMPSize;
     int cantBloques;
     int firstTable;
@@ -29,3 +40,8 @@ struct Columna
     int size;
     int sigColumna;
 };
+
+DB getBDMetaData(char* name);
+int charToInt(char* x);
+
+#endif // STRUCTS_H

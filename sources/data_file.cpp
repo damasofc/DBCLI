@@ -2,48 +2,69 @@
 
 using namespace std;
 
-data_file::data_file(char* direccion)
-{
-    this->direccion = new  char[sizeof(direccion)];
-    this->archivo = new fstream();
-    strcpy(this->direccion, direccion);
+data_file::data_file() {
+	file = NULL;
+	path = NULL;
 }
 
-void data_file::abrir()
-{
-    this->archivo->open(this->direccion,fstream::out | fstream::app | ios::binary);
+data_file::data_file(char *path) {
+	this->path = path;
+	file = new fstream();
 }
 
-void data_file::cerrar()
+
+data_file::~data_file() 
 {
-    this->archivo->close();
+	
 }
 
-void data_file::escribir(char *input,int pos,int bytes)
-{
-    ofstream out(this->direccion,ios::out | ios::in | ios::binary);
-    out.seekp(pos);
-    out.write(input,bytes);
+bool data_file::open() {
+	if (file == NULL) 
+		return false;
+	else {
+		if (!exists(this->path)) {
+			this->file->open(path, ios::in | ios::out | ios::binary | ios::trunc);
+			if (!this->file->good()) {
+				return false;
+			}
+		}
+		else
+		{
+			this->file->open(path, fstream::in | fstream::out | fstream::binary);
+			if (!this->file->good()) {
+				return false;
+			}
+		}
+		return true;
+	}
 }
 
-char* data_file::leer(int posicion, int bytes)
-{
-    char* retorno = new char[bytes];
-    ifstream in(this->direccion,ios::in | ios::binary);
-    in.seekg(posicion);
-    in.read(retorno,bytes);
-    return retorno;
+void data_file::close() {
+	if (this->file == NULL)
+		cout << "No se puede cerrar el archivo" << endl;
+	else {
+		if(this->file->is_open())
+			this->file->close();
+		else 
+			cout << "no se puede cerrar el archivo, nunca ha sido abierto" << endl;
+	}
+		
 }
 
-char* data_file::leer(int bytes)
-{
-    char* retorno = new char[bytes];
-    ifstream in(this->direccion);
-    in.read(retorno,bytes);
-    return retorno;
+void data_file::write(char * data, unsigned int pos, unsigned int lenght) {
+	this->file->seekp(pos, ios::beg);
+	this->file->write((char*)data, lenght);
 }
 
-void data_file::set_pos(int pos)
+char * data_file::read(unsigned int pos, unsigned int size) {
+	char *info = new char[size];
+	this->file->seekg(pos);
+	this->file->read((char*)info, size);
+	return info;
+}
+
+bool data_file::exists(char *file)
 {
-    this->archivo->seekg(pos);
+    ifstream f(file);
+    return f.good();
 }

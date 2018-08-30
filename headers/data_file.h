@@ -1,28 +1,25 @@
 #ifndef DATA_FILE_H
 #define DATA_FILE_H
 
-#include <fstream>
-#include <cstring>
-#include <iostream>
-#include <string.h>
-#include <stdio.h>
 
-using namespace std;
+
+#include <iostream>
+#include <fstream>
 
 class data_file
 {
+private:
+	std::fstream *file;
+	char *path;
 public:
-    data_file(char* direccion);
-    void abrir();
-    void cerrar();
-    void escribir(char* input,int pos,int bytes);
-    char* leer(int posicion, int bytes);
-    char* leer(int bytes);
-    void set_pos(int pos);
-
-    char* direccion;
-    fstream* archivo;
+	data_file();
+	data_file(char *path);
+	~data_file();
+	bool open();
+	void close();
+	void write(char *, unsigned int, unsigned int);
+	char *read(unsigned int, unsigned int);
+    bool exists(char *file);
 };
 
-
-#endif
+#endif // DATA_FILE_H
