@@ -2,11 +2,7 @@
 
 DB getBDMetaData(char* name)
 {
-    std::string pathf = "databases/";
-    pathf += name;
-    char path[pathf.length()];
-    strcpy(path,pathf.c_str());
-    data_file file(path);
+    data_file file(name);
     DB temp;
     if(file.open())
     {

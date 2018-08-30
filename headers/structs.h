@@ -14,8 +14,8 @@
 struct DB
 {
     char nombre[30];
-    //este tamano del bitmap es en bytes
     int size;
+    //este tamano del bitmap es en bytes
     int bitMPSize;
     int cantBloques;
     int firstTable;

@@ -7,6 +7,8 @@
 #include <string.h>
 #include "../headers/data_file.h"
 #include "../headers/structs.h"
+#include <bitset>
+#include <cstdio>
 
 using namespace std;
 
@@ -19,6 +21,8 @@ public:
     void loop();
     bool isReserved(string word);
     void createDB(string,int, int );
+    void showDB(string name);
+    void deleteDB(string name);
     data_file file;
     vector<string> reserved;
 };
