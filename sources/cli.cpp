@@ -9,6 +9,7 @@ Cli::Cli()
 
 void Cli::checkCommand(string command)
 {
+    boost::to_upper(command);
     vector<string> myString;
     istringstream ss(command);
     string token;
@@ -27,11 +28,82 @@ void Cli::checkCommand(string command)
         }
         else if(myString[1] == "TABLE")
         {
-
+            string tableName = myString[2];
+            vector< pair<string, string> > campos;
+            if(tableName.find('(') != string::npos)
+            {
+                tableName = tableName.substr(0,tableName.find('('));
+                int a = 3;
+                int iterator = 0;
+                while(myString[a].find(')') == string::npos)
+                {
+                    string nombreCampo = myString[a];
+                    string tipo;
+                    a++;
+                    if(myString[a].find(')') != string::npos)
+                    {
+                        tipo = myString[a].substr(0,myString[a].find(')'));
+                        if(myString[a].find(')') != string::npos && myString[a].find(',') != string::npos )
+                        {
+                            tipo = myString[a].substr(0,myString[a].find(')')+1);
+                            campos.emplace_back(nombreCampo,tipo);
+                        }
+                        else
+                        {
+                            tipo = myString[a].substr(0,myString[a].find(')'));
+                            campos.emplace_back(nombreCampo,tipo);
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        tipo = myString[a].substr(0,myString[a].find(','));
+                        campos.emplace_back(nombreCampo,tipo);
+                    }
+                    iterator++;
+                    a++;
+                }
+            }
+            else
+            {
+                int a = 4;
+                int iterator = 0;
+                while(myString[a].find(')') == string::npos)
+                {
+                    string nombreCampo = myString[a];
+                    string tipo;
+                    a++;
+                    if(myString[a].find(')') != string::npos)
+                    {
+                        tipo = myString[a].substr(0,myString[a].find(')'));
+                        if(myString[a].find(')') != string::npos && myString[a].find(',') != string::npos )
+                        {
+                            tipo = myString[a].substr(0,myString[a].find(')')+1);
+                            campos.emplace_back(nombreCampo,tipo);
+                        }
+                        else
+                        {
+                            tipo = myString[a].substr(0,myString[a].find(')'));
+                            campos.emplace_back(nombreCampo,tipo);
+                            break;
+                        }
+                    }
+                    else
+                    {
+                        tipo = myString[a].substr(0,myString[a].find(','));
+                        campos.emplace_back(nombreCampo,tipo);
+                    }
+                    iterator++;
+                    a++;
+                }
+            }
+            
+            this->createTable(tableName,campos);
+            
         }
         else
         {
-
+            cout<<"\t\t***ERROR*** That command isn't recognized"<<endl;
         }
     }
     else if(myString[0] == "SHOW")
@@ -60,6 +132,25 @@ void Cli::checkCommand(string command)
         else
         {
 
+        }
+    }
+    else if(myString[0] == "USE")
+    {
+        if(myString[1] == "DATABASE")
+        {
+            string pathf = "databases/";
+            pathf += myString[2];
+            pathf += ".db";
+            char path[pathf.length()];
+            strcpy(path,pathf.c_str());
+            if(this->file.exists(path))
+            {
+                this->databaseName = myString[2];
+            }
+            else
+            {
+                cout<<"***Error** That Database doesn't exists"<<endl;
+            }
         }
     }
 }
@@ -91,12 +182,13 @@ void Cli::createDB(string name, int size, int dataBlockSize)
     DB nuevo;
     memcpy(nuevo.nombre,name.c_str(),name.length());
     int sizeBytes = size * 1000000;
-    int sizeForDataBlocks = sizeBytes - 48 - 720 - 4000;
-    int cantBloqs = (sizeForDataBlocks/dataBlockSize)-1;
+    int sizeForDataBlocks = sizeBytes - 52 - dataBlockSize;
+    int cantBloqs = (sizeForDataBlocks/dataBlockSize);
     int bmpSize = cantBloqs/8;
     nuevo.size = size;
     nuevo.bitMPSize = bmpSize;
     nuevo.cantBloques = cantBloqs;
+    nuevo.blockSize = dataBlockSize;
     nuevo.firstTable = -1;
     string pathf = "databases/";
     pathf += name;
@@ -140,6 +232,7 @@ void Cli::showDB(string name)
     cout<<"\t\t\tDatabase: "<<baseDatos.nombre<<endl;
     cout<<"\t\t"<<"Size: "<<"\t\t"<<baseDatos.size<<"MB"<<"  |  "<<baseDatos.size*1000000<<"B"<<endl;
     cout<<"\t\t"<<"BitmapSize: "<<"\t\t"<<baseDatos.bitMPSize<<"B"<<endl;
+    cout<<"\t\t"<<"BlockSize: "<<"\t\t"<<baseDatos.blockSize<<endl;
     cout<<"\t\t"<<"CantBloques: "<<"\t\t"<<baseDatos.cantBloques<<endl;
 }
 void Cli::deleteDB(string name)
@@ -162,4 +255,29 @@ void Cli::deleteDB(string name)
     {
         cout<<"\t\t\tDatabase: "<<name<<" hasn't been deleted"<<endl;
     }
+}
+
+void Cli::createTable(string name,vector<pair<string,string> > campos )
+{
+    if(databaseName.length() > 0)
+    {
+        name += ".db";
+        string pathf = "databases/";
+        pathf += name;
+        char path[pathf.length()];
+        strcpy(path,pathf.c_str());
+        DB baseDatos = getBDMetaData(path);
+        if(baseDatos.firstTable != 1)
+        {
+            
+        }
+    }
+    else
+    {
+        cout<<"***Error** Your haven't selected any Database"<<endl;
+    }
+}
+void Cli::createColumn(string name, string type, int size)
+{
+    
 }

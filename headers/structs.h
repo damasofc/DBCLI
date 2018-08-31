@@ -10,7 +10,7 @@
 #include "data_file.h"
 
 
-//tamano de 48 bytes
+//tamano de 52 bytes
 struct DB
 {
     char nombre[30];
@@ -18,6 +18,7 @@ struct DB
     //este tamano del bitmap es en bytes
     int bitMPSize;
     int cantBloques;
+    int blockSize;
     int firstTable;
 };
 
@@ -42,6 +43,7 @@ struct Columna
 };
 
 DB getBDMetaData(char* name);
-int charToInt(char* x);
+Tabla getTable(std::string name);
+Tabla getTable(int pos);
 
 #endif // STRUCTS_H

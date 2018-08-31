@@ -9,6 +9,7 @@
 #include "../headers/structs.h"
 #include <bitset>
 #include <cstdio>
+#include <boost/algorithm/string.hpp>
 
 using namespace std;
 
@@ -23,8 +24,11 @@ public:
     void createDB(string,int, int );
     void showDB(string name);
     void deleteDB(string name);
+    void createTable(string name,vector<pair<string,string> > campos );
+    void createColumn(string name,string type,int size);
     data_file file;
     vector<string> reserved;
+    string databaseName;
 };
 
 
