@@ -25,9 +25,12 @@ public:
     void showDB(string name);
     void deleteDB(string name);
     void createTable(string name,vector<pair<string,string> > campos );
-    void createColumn(string name,string type,int size);
+    void showTable(string name);
+    void createColumn(string name,string type,int size, DB base, Tabla tabla);
+    int getSizeRegister(vector<pair<string,string> > campos);
     data_file file;
     vector<string> reserved;
+    vector<string> symbols;
     string databaseName;
 };
 

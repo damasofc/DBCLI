@@ -20,6 +20,7 @@ public:
 	void write(char *, unsigned int, unsigned int);
 	char *read(unsigned int, unsigned int);
     bool exists(char *file);
+	bool isEOF(int);
 };
 
 #endif // DATA_FILE_H

@@ -19,17 +19,19 @@ struct DB
     int bitMPSize;
     int cantBloques;
     int blockSize;
-    int firstTable;
+    int firstTable = -1;
 };
 
-//tamano de 48 bytes
+//tamano de 52 bytes
 struct Tabla
 {
+    bool deleted;
     char nombre[30];
     int tamRegistro;
     int sigTabla;
-    int firstColumn;
-    int firstRegistr;
+    int dataBlockColumns;
+    int firstColumn = -1;
+    int firstRegistr = -1;
 };
 
 //tamano de 40 bytes
@@ -38,12 +40,13 @@ struct Columna
     char nombre[30];
     //tipo puede ser: I,D o, C
     char tipo;
-    int size;
-    int sigColumna;
+    int size = -1;
+    int sigColumna = -1;
 };
 
 DB getBDMetaData(char* name);
-Tabla getTable(std::string name);
-Tabla getTable(int pos);
+Tabla getTable(std::string name, std::string db);
+Tabla getTable(int pos, std::string db);
+Columna getColumna(int pos,Tabla tabla, std::string db);
 
 #endif // STRUCTS_H

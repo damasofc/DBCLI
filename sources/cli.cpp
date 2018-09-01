@@ -5,18 +5,15 @@ Cli::Cli()
 {
     this->reserved = {"CREATE","DATABASE","DATABASES","DROP","TABLE","INSERT","INTO","VALUES","DELETE","FROM","WHERE",
     "SET","UPDATE","SELECT","SHOW","USE"};
+
+    this->symbols = {"(",")",",",";"};
 }
 
 void Cli::checkCommand(string command)
 {
     boost::to_upper(command);
     vector<string> myString;
-    istringstream ss(command);
-    string token;
-    while(getline(ss,token,' '))
-    {
-        myString.push_back(token);
-    }
+    boost::split(myString,command,boost::is_any_of(" "));
     if(myString[0] == "CREATE")
     {
         if(myString[1] == "DATABASE")
@@ -117,6 +114,17 @@ void Cli::checkCommand(string command)
         {
 
         }
+        else if(myString[1] == "TABLE")
+        {
+            if(databaseName.length() > 0)
+            {
+                this->showTable(myString[2]);
+            }
+            else
+            {
+                cout<<"***Error** Your haven't selected any Database"<<endl;
+            }
+        }
     }
     else if(myString[0] == "DROP")
     {
@@ -146,6 +154,7 @@ void Cli::checkCommand(string command)
             if(this->file.exists(path))
             {
                 this->databaseName = myString[2];
+                this->file = data_file(path);
             }
             else
             {
@@ -204,7 +213,7 @@ void Cli::createDB(string name, int size, int dataBlockSize)
     char index = '0';
     while(i < bmpSize) 
     {
-        this->file.write(&index,(48+i),1);
+        this->file.write(&index,(sizeof(nuevo)+i),1);
         i++;
     }
     if(this->file.exists(path))
@@ -234,6 +243,25 @@ void Cli::showDB(string name)
     cout<<"\t\t"<<"BitmapSize: "<<"\t\t"<<baseDatos.bitMPSize<<"B"<<endl;
     cout<<"\t\t"<<"BlockSize: "<<"\t\t"<<baseDatos.blockSize<<endl;
     cout<<"\t\t"<<"CantBloques: "<<"\t\t"<<baseDatos.cantBloques<<endl;
+    cout<<"\t\t"<<"FirsTable: "<<"\t\t"<<baseDatos.firstTable<<endl;
+}
+
+void Cli::showTable(string name)
+{
+    Tabla t = getTable(name,databaseName);
+    if(t.tamRegistro < 0)
+    {
+        cout<<"\t\t***Error*** That Table doesn't exists"<<endl;
+    }
+    else
+    {
+        cout<<"\t\t\tTable: "<<t.nombre<<endl;
+        cout<<"\t\t"<<"SizeReg: "<<"\t\t"<<t.tamRegistro<<endl;
+        cout<<"\t\t"<<"NextTable: "<<"\t\t"<<t.sigTabla<<endl;
+        cout<<"\t\t"<<"DataBlockCols: "<<"\t\t"<<t.dataBlockColumns<<endl;
+        cout<<"\t\t"<<"FirstCol: "<<"\t\t"<<t.firstColumn<<endl;
+        cout<<"\t\t"<<"FirstRegister: "<<"\t\t"<<t.firstRegistr<<endl;
+    }
 }
 void Cli::deleteDB(string name)
 {
@@ -261,15 +289,56 @@ void Cli::createTable(string name,vector<pair<string,string> > campos )
 {
     if(databaseName.length() > 0)
     {
-        name += ".db";
+        string nombrBD = databaseName + ".db";
         string pathf = "databases/";
-        pathf += name;
+        pathf += nombrBD;
         char path[pathf.length()];
         strcpy(path,pathf.c_str());
         DB baseDatos = getBDMetaData(path);
-        if(baseDatos.firstTable != 1)
+        if(baseDatos.firstTable == -1)
         {
-            
+            int posTable = sizeof(baseDatos) + baseDatos.bitMPSize;
+            Tabla tabla;
+            tabla.deleted = false;
+            memcpy(tabla.nombre,name.c_str(),name.length());
+            tabla.tamRegistro = this->getSizeRegister(campos);
+            tabla.sigTabla = -1;
+            tabla.dataBlockColumns = 2;
+            tabla.firstColumn = 0;
+            this->file = data_file(path);
+            if(this->file.open())
+            {
+                int posInicioTabla = sizeof(DB) + baseDatos.bitMPSize;
+                this->file.write(reinterpret_cast<char *>(&tabla),posInicioTabla,sizeof(tabla));
+                cout<<"\t\tTable "<<name<<" has been created"<<endl;
+                baseDatos.firstTable = 0;
+                this->file.write(reinterpret_cast<char*>(&baseDatos),0,sizeof(baseDatos));
+                //guardar las columnas:
+                for(int i = 0; i < campos.size(); i++)
+                {
+                    string namecol = campos[i].first;
+                    string type = campos[i].second;
+                    if(type == "INT")
+                        this->createColumn(namecol,type,4,baseDatos,tabla);
+                    else if(type == "DOUBLE")
+                        this->createColumn(namecol,type,8,baseDatos,tabla);
+                    else
+                    {
+                        vector<string> strs;
+                        boost::split(strs,type,boost::is_any_of("("));
+                        boost::split(strs,strs[1],boost::is_any_of(")"));
+                        int sizeCol = stoi(strs[0]);
+                        this->createColumn(namecol,"CHAR",sizeCol,baseDatos,tabla);
+                    }
+                }
+                this->file.close();
+            }
+            else
+            {
+                cout<<"\t\tError"<<endl;
+            }
+
+
         }
     }
     else
@@ -277,7 +346,47 @@ void Cli::createTable(string name,vector<pair<string,string> > campos )
         cout<<"***Error** Your haven't selected any Database"<<endl;
     }
 }
-void Cli::createColumn(string name, string type, int size)
+
+//FALTA EL CREATE COLUMN
+void Cli::createColumn(string name, string type, int size,DB base,Tabla tabla)
 {
-    
+    Columna col;
+    memcpy(col.nombre,name.c_str(),name.length());
+    // switch(type)
+    // {
+    //     case "INT":
+    //         col.tipo = 'I';
+    //     break;
+    //     case "CHAR":
+    //         col.tipo = 'C';
+    //     break;
+    //     case "DOUBLE":
+    //         col.tipo = 'D';
+    //     break;
+    //     default:
+
+    //     break;
+    // }
+    // col.size = size;
+}
+
+int Cli::getSizeRegister(vector<pair<string,string> > campos)
+{
+    int size = 0;
+    for(int i = 0; i < campos.size(); i++)
+    {
+        string type = campos[i].second;
+        if(type == "INT")
+            size += 4;
+        else if(type == "DOUBLE")
+            size += 8;
+        else
+        {
+            vector<string> strs;
+            boost::split(strs,type,boost::is_any_of("("));
+            boost::split(strs,strs[1],boost::is_any_of(")"));
+            size += stoi(strs[0]);
+        }
+    }
+    return size;
 }

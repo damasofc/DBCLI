@@ -68,3 +68,11 @@ bool data_file::exists(char *file)
     ifstream f(file);
     return f.good();
 }
+bool data_file::isEOF(int pos)
+{
+	this->file->seekg(0,ios::end);
+	int fin = file->tellg();
+	if(pos < fin)
+		return false;
+	return true;
+}
