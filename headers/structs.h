@@ -47,6 +47,7 @@ struct Columna
 DB getBDMetaData(char* name);
 Tabla getTable(std::string name, std::string db);
 Tabla getTable(int pos, std::string db);
+int getTablePos(std::string name, std::string db);
 Columna getColumna(int pos,Tabla tabla, std::string db);
 
 #endif // STRUCTS_H

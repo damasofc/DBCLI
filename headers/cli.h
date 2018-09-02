@@ -10,6 +10,8 @@
 #include <bitset>
 #include <cstdio>
 #include <boost/algorithm/string.hpp>
+#include <dirent.h> 
+#include <stdio.h> 
 
 using namespace std;
 
@@ -24,8 +26,12 @@ public:
     void createDB(string,int, int );
     void showDB(string name);
     void deleteDB(string name);
+    void deleteTable(string name);
     void createTable(string name,vector<pair<string,string> > campos );
+    void showDatabases();
     void showTable(string name);
+    void showTables();
+    void showColumns(Tabla table);
     void createColumn(string name,string type,int size, DB base, Tabla tabla);
     int getSizeRegister(vector<pair<string,string> > campos);
     data_file file;

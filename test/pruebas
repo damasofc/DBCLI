@@ -1,0 +1,3 @@
+create table examenes( name char(30), edad int );
+create table students( lastname char(44), edad int, promedio double );
+create database p 1 512

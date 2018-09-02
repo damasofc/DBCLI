@@ -112,13 +112,24 @@ void Cli::checkCommand(string command)
         }
         else if(myString[1] == "DATABASES")
         {
-
+            this->showDatabases();
         }
         else if(myString[1] == "TABLE")
         {
             if(databaseName.length() > 0)
             {
                 this->showTable(myString[2]);
+            }
+            else
+            {
+                cout<<"***Error** Your haven't selected any Database"<<endl;
+            }
+        }
+        else if(myString[1] == "TABLES")
+        {
+            if(databaseName.length() > 0)
+            {
+                this->showTables();
             }
             else
             {
@@ -135,7 +146,15 @@ void Cli::checkCommand(string command)
         }
         else if(myString[1] == "TABLE")
         {
-
+            if(databaseName.length() > 0)
+            {
+                this->deleteTable(myString[2]);
+            }
+            else
+            {
+                cout<<"***Error** Your haven't selected any Database"<<endl;
+            
+            }
         }
         else
         {
@@ -161,6 +180,10 @@ void Cli::checkCommand(string command)
                 cout<<"***Error** That Database doesn't exists"<<endl;
             }
         }
+    }
+    else
+    {
+        cout<<"\t\t***Error** That Command isn't recognized"<<endl;
     }
 }
 
@@ -261,7 +284,19 @@ void Cli::showTable(string name)
         cout<<"\t\t"<<"DataBlockCols: "<<"\t\t"<<t.dataBlockColumns<<endl;
         cout<<"\t\t"<<"FirstCol: "<<"\t\t"<<t.firstColumn<<endl;
         cout<<"\t\t"<<"FirstRegister: "<<"\t\t"<<t.firstRegistr<<endl;
+        this->showColumns(t);
     }
+}
+void Cli::showColumns(Tabla table)
+{
+    int i = table.firstColumn;
+    Columna temp;
+    do
+    {
+        temp = getColumna(i,table,databaseName);
+        cout<<"\t\t"<<temp.nombre<<"\t\t"<<temp.tipo<<temp.size<<" B"<<endl;
+        i = temp.sigColumna;
+    } while(temp.sigColumna != -1);
 }
 void Cli::deleteDB(string name)
 {
@@ -287,7 +322,6 @@ void Cli::deleteDB(string name)
 
 void Cli::createTable(string name,vector<pair<string,string> > campos )
 {
-    cout<<name.c_str()<<"/"<<name.length()<<endl;
     if(databaseName.length() > 0)
     {
         string nombrBD = databaseName + ".db";
@@ -305,7 +339,6 @@ void Cli::createTable(string name,vector<pair<string,string> > campos )
             tabla.tamRegistro = this->getSizeRegister(campos);
             tabla.sigTabla = -1;
             tabla.dataBlockColumns = 2;
-            tabla.firstColumn = 0;
             this->file = data_file(path);
             if(this->file.open())
             {
@@ -314,25 +347,31 @@ void Cli::createTable(string name,vector<pair<string,string> > campos )
                 cout<<"\t\tTable "<<name<<" has been created"<<endl;
                 baseDatos.firstTable = 0;
                 this->file.write(reinterpret_cast<char*>(&baseDatos),0,sizeof(baseDatos));
-                //guardar las columnas:
-                for(int i = 0; i < campos.size(); i++)
-                {
-                    string namecol = campos[i].first;
-                    string type = campos[i].second;
-                    if(type == "INT")
-                        this->createColumn(namecol,type,4,baseDatos,tabla);
-                    else if(type == "DOUBLE")
-                        this->createColumn(namecol,type,8,baseDatos,tabla);
-                    else
-                    {
-                        vector<string> strs;
-                        boost::split(strs,type,boost::is_any_of("("));
-                        boost::split(strs,strs[1],boost::is_any_of(")"));
-                        int sizeCol = stoi(strs[0]);
-                        this->createColumn(namecol,"CHAR",sizeCol,baseDatos,tabla);
-                    }
-                }
                 this->file.close();
+                //guardar las columnas:
+                this->file = data_file(path);
+                if(this->file.open())
+                {
+                    for(int i = 0; i < campos.size(); i++)
+                    {
+                        tabla = getTable(tabla.nombre,databaseName);
+                        string namecol = campos[i].first;
+                        string type = campos[i].second;
+                        if(type == "INT")
+                            this->createColumn(namecol,type,4,baseDatos,tabla);
+                        else if(type == "DOUBLE")
+                            this->createColumn(namecol,type,8,baseDatos,tabla);
+                        else
+                        {
+                            vector<string> strs;
+                            boost::split(strs,type,boost::is_any_of("("));
+                            boost::split(strs,strs[1],boost::is_any_of(")"));
+                            int sizeCol = stoi(strs[0]);
+                            this->createColumn(namecol,"CHAR",sizeCol,baseDatos,tabla);
+                        }
+                    }
+
+                }
             }
             else
             {
@@ -356,8 +395,7 @@ void Cli::createTable(string name,vector<pair<string,string> > campos )
             strcpy(tabla.nombre,name.c_str());
             tabla.tamRegistro = this->getSizeRegister(campos);
             tabla.sigTabla = -1;
-            tabla.dataBlockColumns = 2 + (lastTable + 1) ;
-            tabla.firstColumn = 0;
+            tabla.dataBlockColumns = 2 + (lastTable + 1);
             this->file = data_file(path);
             if(this->file.open())
             {
@@ -368,25 +406,31 @@ void Cli::createTable(string name,vector<pair<string,string> > campos )
                 posInicioTabla = sizeof(DB) + baseDatos.bitMPSize + ((lastTable + 1)* sizeof(Tabla));
                 this->file.write(reinterpret_cast<char *>(&tabla),posInicioTabla,sizeof(tabla));
                 cout<<"\t\tTable "<<name<<" has been created"<<endl;
-                //guardar las columnas:
-                for(int i = 0; i < campos.size(); i++)
-                {
-                    string namecol = campos[i].first;
-                    string type = campos[i].second;
-                    if(type == "INT")
-                        this->createColumn(namecol,type,4,baseDatos,tabla);
-                    else if(type == "DOUBLE")
-                        this->createColumn(namecol,type,8,baseDatos,tabla);
-                    else
-                    {
-                        vector<string> strs;
-                        boost::split(strs,type,boost::is_any_of("("));
-                        boost::split(strs,strs[1],boost::is_any_of(")"));
-                        int sizeCol = stoi(strs[0]);
-                        this->createColumn(namecol,"CHAR",sizeCol,baseDatos,tabla);
-                    }
-                }
                 this->file.close();
+                //guardar las columnas:
+                this->file = data_file(path);
+                if(this->file.open())
+                {
+                    for(int i = 0; i < campos.size(); i++)
+                    {
+                        tabla = getTable(tabla.nombre,databaseName);
+                        string namecol = campos[i].first;
+                        string type = campos[i].second;
+                        if(type == "INT")
+                            this->createColumn(namecol,type,4,baseDatos,tabla);
+                        else if(type == "DOUBLE")
+                            this->createColumn(namecol,type,8,baseDatos,tabla);
+                        else
+                        {
+                            vector<string> strs;
+                            boost::split(strs,type,boost::is_any_of("("));
+                            boost::split(strs,strs[1],boost::is_any_of(")"));
+                            int sizeCol = stoi(strs[0]);
+                            this->createColumn(namecol,"CHAR",sizeCol,baseDatos,tabla);
+                        }
+                    }
+
+                }
             }
             else
             {
@@ -404,23 +448,57 @@ void Cli::createTable(string name,vector<pair<string,string> > campos )
 void Cli::createColumn(string name, string type, int size,DB base,Tabla tabla)
 {
     Columna col;
-    memcpy(col.nombre,name.c_str(),name.length());
-    // switch(type)
-    // {
-    //     case "INT":
-    //         col.tipo = 'I';
-    //     break;
-    //     case "CHAR":
-    //         col.tipo = 'C';
-    //     break;
-    //     case "DOUBLE":
-    //         col.tipo = 'D';
-    //     break;
-    //     default:
+    strcpy(col.nombre,name.c_str());
+    if(type == "INT")
+        col.tipo = 'I';
+    else if (type == "CHAR")
+        col.tipo = 'C';
+    else if (type == "DOUBLE")
+        col.tipo = 'D';
+    col.size = size;
+    string nombrBD = databaseName + ".db";
+    string pathf = "databases/";
+    pathf += nombrBD;
+    char path[pathf.length()];
+    strcpy(path,pathf.c_str());
+    if(tabla.firstColumn == -1)
+    {
+        int posCol = sizeof(DB) + base.bitMPSize + (tabla.dataBlockColumns * base.blockSize);
+        this->file = data_file(path);
+        if(this->file.open())
+        {
+            //ESTA LINEA GUARDA LA COLUMNA
+            this->file.write(reinterpret_cast<char *>(&col),posCol,sizeof(col));
+            //AHORA SE ACTUALIZA LA TABLA PARA DECIRLE QUE LA FIRST COLUMNA ESTA EN TAL POS
+            tabla.firstColumn = 0;
+            posCol = sizeof(DB) + base.bitMPSize + (sizeof(Tabla) * getTablePos(tabla.nombre,databaseName));
+            this->file.write(reinterpret_cast<char *>(&tabla),posCol,sizeof(Tabla));
+            this->file.close();
+        }
 
-    //     break;
-    // }
-    // col.size = size;
+    }
+    else
+    {
+        int lastCol = tabla.firstColumn;
+        Columna colTemp = getColumna(lastCol,tabla,databaseName);
+        while(colTemp.sigColumna > -1)
+        {
+            lastCol = colTemp.sigColumna;
+            colTemp = getColumna(colTemp.sigColumna,tabla,databaseName);
+        }
+        this->file = data_file(path);
+        if(this->file.open())
+        {
+            int posCol = sizeof(DB) + base.bitMPSize + (tabla.dataBlockColumns * base.blockSize) + ((lastCol + 1) * sizeof(Columna));
+            //ESTA LINEA GUARDA LA COLUMNA
+            this->file.write(reinterpret_cast<char *>(&col),posCol,sizeof(col));
+            //AHORA SE ACTUALIZA LA COLUMNA ANTERIOR PARA DECIRLE DONDE ESTA LA SIG. COLUMNA
+            colTemp.sigColumna = lastCol + 1;
+            posCol = sizeof(DB) + base.bitMPSize + (tabla.dataBlockColumns * base.blockSize) + ((lastCol) * sizeof(Columna));
+            this->file.write(reinterpret_cast<char *>(&colTemp),posCol,sizeof(Columna));
+            this->file.close();
+        }
+    }
 }
 
 int Cli::getSizeRegister(vector<pair<string,string> > campos)
@@ -442,4 +520,68 @@ int Cli::getSizeRegister(vector<pair<string,string> > campos)
         }
     }
     return size;
+}
+
+void Cli::showTables()
+{
+    string nombrBD = databaseName + ".db";
+    string pathf = "databases/";
+    pathf += nombrBD;
+    char path[pathf.length()];
+    strcpy(path,pathf.c_str());
+    DB baseDatos = getBDMetaData(path);
+    int i = baseDatos.firstTable;
+    cout<<"\t\t\t"<<"Tables in "<<databaseName<<endl;
+    while(i > -1)
+    {
+        Tabla tableTemp = getTable(i,databaseName);
+        cout<<"\t\t"<<tableTemp.nombre<<endl;
+        i = tableTemp.sigTabla;
+    }
+
+}
+void Cli::deleteTable(string name)
+{
+    string nombrBD = databaseName + ".db";
+    string pathf = "databases/";
+    pathf += nombrBD;
+    char path[pathf.length()];
+    strcpy(path,pathf.c_str());
+    DB baseDatos = getBDMetaData(path);
+    Tabla table = getTable(name,databaseName);
+    if(table.firstColumn == -1)
+    {
+        cout<<"\t\t***Error*** That Table doesn't exists"<<endl;
+    }
+    else
+    {
+        table.deleted = true;
+    }
+}
+void Cli::showDatabases()
+{
+    DIR           *dirp;
+    struct dirent *directory;
+
+    dirp = opendir("databases/");
+    cout<<"\t\t\tDatabases: "<<endl;
+    if (dirp)
+    {
+        int i = 0;
+        while ((directory = readdir(dirp)) != NULL)
+        {
+            if( i == 0 || i == 1)
+            {
+                i++;
+                continue;
+            }
+            vector<string> myString;
+            boost::split(myString,directory->d_name,boost::is_any_of("."));
+            cout<<"\t\t"<<myString[0]<<endl;
+            i++;
+        }
+
+        closedir(dirp);
+    }
+    delete directory;
 }

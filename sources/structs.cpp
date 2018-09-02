@@ -25,10 +25,21 @@ Columna getColumna(int pos,Tabla tabla, std::string db)
     char path[pathf.length()];
     strcpy(path,pathf.c_str());
     data_file file(path);
+    Columna c;
     if(file.open())
     {
         DB mdBase = getBDMetaData(path);
+        int posSalto = sizeof(DB) + mdBase.bitMPSize + (tabla.dataBlockColumns * mdBase.blockSize) + (pos* sizeof(Columna));
+        memcpy(c.nombre,file.read(posSalto,sizeof(c.nombre)),sizeof(c.nombre));
+        posSalto += sizeof(c.nombre) + 1;
+        memcpy(&c.tipo,file.read(posSalto,sizeof(c.tipo)),sizeof(c.tipo));
+        posSalto += sizeof(c.tipo);
+        memcpy(&c.size,file.read(posSalto,sizeof(c.size)),sizeof(c.size));
+        posSalto += sizeof(c.size);
+        memcpy(&c.sigColumna,file.read(posSalto,sizeof(c.sigColumna)),sizeof(c.sigColumna));
+        file.close();
     }
+    return c;
 }
 
 Tabla getTable(int pos, std::string db)
@@ -93,4 +104,20 @@ Tabla getTable(std::string name, std::string db)
         file.close();
     }
     return retorno;
+}
+int getTablePos(std::string name, std::string db)
+{
+    int x = -1;
+    int it = 0;
+    Tabla temp;
+    do
+    {   
+        temp = getTable(it,db);
+        if(temp.nombre == name && !temp.deleted)
+            return it;
+        it++;
+
+    } while(temp.sigTabla != -1);
+
+    return x;
 }
