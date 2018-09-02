@@ -249,7 +249,7 @@ void Cli::showDB(string name)
 void Cli::showTable(string name)
 {
     Tabla t = getTable(name,databaseName);
-    if(t.tamRegistro < 0)
+    if(t.tamRegistro < 0 || t.deleted)
     {
         cout<<"\t\t***Error*** That Table doesn't exists"<<endl;
     }
@@ -287,6 +287,7 @@ void Cli::deleteDB(string name)
 
 void Cli::createTable(string name,vector<pair<string,string> > campos )
 {
+    cout<<name.c_str()<<"/"<<name.length()<<endl;
     if(databaseName.length() > 0)
     {
         string nombrBD = databaseName + ".db";
@@ -300,7 +301,7 @@ void Cli::createTable(string name,vector<pair<string,string> > campos )
             int posTable = sizeof(baseDatos) + baseDatos.bitMPSize;
             Tabla tabla;
             tabla.deleted = false;
-            memcpy(tabla.nombre,name.c_str(),name.length());
+            strcpy(tabla.nombre,name.c_str());
             tabla.tamRegistro = this->getSizeRegister(campos);
             tabla.sigTabla = -1;
             tabla.dataBlockColumns = 2;
@@ -335,10 +336,62 @@ void Cli::createTable(string name,vector<pair<string,string> > campos )
             }
             else
             {
-                cout<<"\t\tError"<<endl;
+                cout<<"\t\t***Error*** with the DB"<<endl;
             }
 
 
+        }
+        else
+        {
+            int lastTable = baseDatos.firstTable;
+            Tabla tableTemp = getTable(lastTable,databaseName);
+            while(tableTemp.sigTabla > -1)
+            {
+                lastTable = tableTemp.sigTabla;
+                tableTemp = getTable(tableTemp.sigTabla,databaseName);
+            }
+            tableTemp.sigTabla = lastTable + 1;
+            Tabla tabla;
+            tabla.deleted = false;
+            strcpy(tabla.nombre,name.c_str());
+            tabla.tamRegistro = this->getSizeRegister(campos);
+            tabla.sigTabla = -1;
+            tabla.dataBlockColumns = 2 + (lastTable + 1) ;
+            tabla.firstColumn = 0;
+            this->file = data_file(path);
+            if(this->file.open())
+            {
+                //ESTAS 2 LINEAS GUARDAN EL VALOR DE SIG TABLA
+                int posInicioTabla = sizeof(DB) + baseDatos.bitMPSize + (lastTable * sizeof(Tabla));
+                this->file.write(reinterpret_cast<char *>(&tableTemp),posInicioTabla,sizeof(tableTemp));
+                //FIN 2 LINEAS QUE GUARDAN EL VALOR SIG.
+                posInicioTabla = sizeof(DB) + baseDatos.bitMPSize + ((lastTable + 1)* sizeof(Tabla));
+                this->file.write(reinterpret_cast<char *>(&tabla),posInicioTabla,sizeof(tabla));
+                cout<<"\t\tTable "<<name<<" has been created"<<endl;
+                //guardar las columnas:
+                for(int i = 0; i < campos.size(); i++)
+                {
+                    string namecol = campos[i].first;
+                    string type = campos[i].second;
+                    if(type == "INT")
+                        this->createColumn(namecol,type,4,baseDatos,tabla);
+                    else if(type == "DOUBLE")
+                        this->createColumn(namecol,type,8,baseDatos,tabla);
+                    else
+                    {
+                        vector<string> strs;
+                        boost::split(strs,type,boost::is_any_of("("));
+                        boost::split(strs,strs[1],boost::is_any_of(")"));
+                        int sizeCol = stoi(strs[0]);
+                        this->createColumn(namecol,"CHAR",sizeCol,baseDatos,tabla);
+                    }
+                }
+                this->file.close();
+            }
+            else
+            {
+                cout<<"\t\t***Error*** with the DB"<<endl;
+            }
         }
     }
     else

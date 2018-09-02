@@ -28,7 +28,7 @@ struct Tabla
     bool deleted;
     char nombre[30];
     int tamRegistro;
-    int sigTabla;
+    int sigTabla = -1;
     int dataBlockColumns;
     int firstColumn = -1;
     int firstRegistr = -1;
