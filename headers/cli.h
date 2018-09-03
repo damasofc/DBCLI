@@ -31,6 +31,7 @@ public:
     void showDatabases();
     void showTable(string name);
     void showTables();
+    void insert(vector<string> values, string tablename);
     void showColumns(Tabla table);
     void createColumn(string name,string type,int size, DB base, Tabla tabla);
     int getSizeRegister(vector<pair<string,string> > campos);

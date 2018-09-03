@@ -174,12 +174,31 @@ void Cli::checkCommand(string command)
             {
                 this->databaseName = myString[2];
                 this->file = data_file(path);
+                cout<<"\t\t\tReady to use "<<myString[2]<<endl;
             }
             else
             {
                 cout<<"***Error** That Database doesn't exists"<<endl;
             }
         }
+    }
+    else if(myString[0] == "INSERT" && myString[1] == "INTO")
+    {
+        string tableName = myString[2];
+        int it = 4;
+
+        vector<string> strM;
+        vector<string> values;
+        boost::split(strM,command,boost::is_any_of("(,)"));
+        for(int i = 0; i < strM.size()-1; i++)
+        {
+            if(i == 0)
+                continue;
+            values.push_back(strM[i]);
+        }
+        this->insert(values,tableName);
+        
+        
     }
     else
     {
@@ -535,7 +554,10 @@ void Cli::showTables()
     while(i > -1)
     {
         Tabla tableTemp = getTable(i,databaseName);
-        cout<<"\t\t"<<tableTemp.nombre<<endl;
+        if(!tableTemp.deleted)
+        {
+            cout<<"\t\t"<<tableTemp.nombre<<endl;
+        }
         i = tableTemp.sigTabla;
     }
 
@@ -556,6 +578,15 @@ void Cli::deleteTable(string name)
     else
     {
         table.deleted = true;
+        this->file = data_file(path);
+        if(this->file.open())
+        {
+            int posCol = sizeof(DB) + baseDatos.bitMPSize + (sizeof(Tabla) * getTablePos(name,databaseName));
+            //ESTA LINEA GUARDA LA COLUMNA
+            this->file.write(reinterpret_cast<char *>(&table),posCol,sizeof(Tabla));
+            this->file.close();
+            cout<<"\t\t\tTable: "<<name<<" deleted"<<endl;
+        }
     }
 }
 void Cli::showDatabases()
@@ -584,4 +615,23 @@ void Cli::showDatabases()
         closedir(dirp);
     }
     delete directory;
+}
+
+void Cli::insert(vector<string> values, string tablename)
+{
+    string nombrBD = databaseName + ".db";
+    string pathf = "databases/";
+    pathf += nombrBD;
+    char path[pathf.length()];
+    strcpy(path,pathf.c_str());
+    DB baseDatos = getBDMetaData(path);
+    Tabla table = getTable(tablename,databaseName);
+    vector<Columna> campos;
+    Columna temp = getColumna(table.firstColumn,table,databaseName);
+    campos.push_back(temp);
+    while(temp.sigColumna > -1)
+    {
+        temp = getColumna(temp.sigColumna,databaseName);
+        campos.push_back(temp);
+    }
 }

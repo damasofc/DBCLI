@@ -31,6 +31,8 @@ struct Tabla
     int sigTabla = -1;
     int dataBlockColumns;
     int firstColumn = -1;
+    //este sera el apuntador al bloque de data donde esta
+    //el primer registro
     int firstRegistr = -1;
 };
 
